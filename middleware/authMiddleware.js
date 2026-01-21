@@ -2,7 +2,7 @@ import { verifyToken } from '../utils/jwt.js';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config();   
 
 export const authMiddleware = (allowedRoles = ['student', 'admin']) => {
   return async (req, res, next) => {
