@@ -1,28 +1,44 @@
-import express from "express";
-import dotenv from "dotenv";
-import connectDB from "./config/db.js";
-import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
-import userRoutes from "./routes/user.js";
-import courseRoutes from "./routes/courses.js";
+import authRoutes from './routes/auth.routes.js';
+import courseRoutes from './routes/course.routes.js';
+import admissionRoutes from './routes/admission.routes.js';
+import contactRoutes from './routes/contact.routes.js';
+import facultyRoutes from './routes/faculty.routes.js';
 
 dotenv.config();
-connectDB();
 
 const app = express();
-
-app.use(helmet());
-app.use(cors());
-app.use(morgan("dev"));
-app.use(express.json());
-
-app.use("/api/user", userRoutes);
-app.use("/api/courses", courseRoutes);
-
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/admissions', admissionRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/faculty', facultyRoutes);
+
+// Root test route (VERY IMPORTANT)
+app.get('/', (req, res) => {
+  res.send('API is running');
 });
+
+// Start server FIRST
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Connect MongoDB SEPARATELY
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB Connected'))
+  .catch((err) => {
+    console.error('MongoDB connection failed:', err.message);
+  });
