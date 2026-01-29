@@ -8,6 +8,7 @@ import courseRoutes from './routes/course.routes.js';
 import admissionRoutes from './routes/admission.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import facultyRoutes from './routes/faculty.routes.js';
+import libraryRoutes from './routes/library.routes.js';
 
 dotenv.config();
 
@@ -24,6 +25,8 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/admissions', admissionRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/faculty', facultyRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/library', libraryRoutes);
 
 // Root test route (VERY IMPORTANT)
 app.get('/', (req, res) => {
