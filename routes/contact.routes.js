@@ -1,8 +1,8 @@
 import express from 'express';
-import { sendContactMessage } from '../controllers/contact.controller.js';
+import { sendContact } from '../controllers/contact.controller.js';
 
 const router = express.Router();
 
-router.post('/', sendContactMessage);
+router.post('/', sendContact);
 
 export default router;
