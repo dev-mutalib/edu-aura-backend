@@ -1,37 +1,66 @@
-import { verifyToken } from '../utils/jwt.js';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
 
-dotenv.config();   
+dotenv.config();
 
 export const authMiddleware = (allowedRoles = ['student', 'admin']) => {
   return async (req, res, next) => {
     try {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({ message: 'Access denied: No token provided' });
+      /* ================= TOKEN CHECK ================= */
+      const authHeader = req.headers.authorization;
+
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          message: 'Access denied: No token provided',
+        });
       }
 
-      const decoded = verifyToken(token);
-      if (!decoded || !decoded.id || !decoded.role) {
-        return res.status(401).json({ message: 'Invalid token' });
+      const token = authHeader.split(' ')[1];
+
+      /* ================= VERIFY TOKEN ================= */
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        return res.status(401).json({
+          message:
+            err.name === 'TokenExpiredError'
+              ? 'Token expired'
+              : 'Invalid token',
+        });
       }
 
-      if (!allowedRoles.includes(decoded.role)) {
-        return res.status(403).json({ message: 'Access denied: Insufficient permissions' });
+      /* ================= ROLE CHECK (TOKEN) ================= */
+      if (!decoded.role || !allowedRoles.includes(decoded.role)) {
+        return res.status(403).json({
+          message: 'Access denied: Insufficient permissions',
+        });
       }
 
+      /* ================= USER CHECK (DB) ================= */
       const user = await User.findById(decoded.id).select('-password');
+
       if (!user) {
-        return res.status(401).json({ message: 'User not found' });
+        return res.status(401).json({
+          message: 'User not found',
+        });
       }
 
+      /* ================= ROLE CHECK (DB SAFETY) ================= */
+      if (!allowedRoles.includes(user.role)) {
+        return res.status(403).json({
+          message: 'Access denied: Role mismatch',
+        });
+      }
+
+      /* ================= ATTACH USER ================= */
       req.user = user;
       next();
-    } catch (err) {
-      res.status(401).json({
-        message: 'Unauthorized',
-        error: err.message || 'Invalid token or session expired',
+    } catch (error) {
+      return res.status(500).json({
+        message: 'Authorization failed',
+        error: error.message,
       });
     }
   };
