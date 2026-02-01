@@ -40,3 +40,49 @@ export const addBook = async (req, res) => {
     });
   }
 };
+
+/* ================= BORROW BOOK ================= */
+export const borrowBook = async (req, res) => {
+  try {
+    const book = await LibraryBook.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    if (book.quantity <= 0) {
+      return res.status(400).json({ message: 'Book out of stock' });
+    }
+
+    book.quantity -= 1;
+    await book.save();
+
+    res.status(200).json(book);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to borrow book',
+      error: error.message,
+    });
+  }
+};
+
+/* ================= RETURN BOOK ================= */
+export const returnBook = async (req, res) => {
+  try {
+    const book = await LibraryBook.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    book.quantity += 1;
+    await book.save();
+
+    res.status(200).json(book);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to return book',
+      error: error.message,
+    });
+  }
+};
