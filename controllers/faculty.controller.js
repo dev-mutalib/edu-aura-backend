@@ -1,8 +1,9 @@
 import Faculty from '../models/faculty.model.js';
 
 /**
- * @desc Get all faculty
- * @route GET /api/faculty
+ * @desc    Get all active faculty
+ * @route   GET /api/faculty
+ * @access  Public
  */
 export const getAllFaculty = async (req, res) => {
   try {
@@ -25,58 +26,121 @@ export const getAllFaculty = async (req, res) => {
 };
 
 /**
- * @desc Seed faculty (one-time)
- * @route POST /api/faculty/seed
+ * @desc    Get single faculty by ID
+ * @route   GET /api/faculty/:id
+ * @access  Public
  */
-export const seedFaculty = async (req, res) => {
+export const getFacultyById = async (req, res) => {
   try {
-    await Faculty.deleteMany();
+    const faculty = await Faculty.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
-    const faculty = await Faculty.insertMany([
-      {
-        name: 'Dr. Amit Sharma',
-        designation: 'Professor',
-        subject: 'Computer Science',
-        experience: '12 Years',
-        image:
-          'https://images.pexels.com/photos/5212339/pexels-photo-5212339.jpeg',
-      },
-      {
-        name: 'Ms. Neha Verma',
-        designation: 'Senior Lecturer',
-        subject: 'Mathematics',
-        experience: '8 Years',
-        image:
-          'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-      },
-      {
-        name: 'Mr. Rahul Singh',
-        designation: 'Assistant Professor',
-        subject: 'Physics',
-        experience: '6 Years',
-        image:
-          'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-      },
-      {
-        name: 'Dr. Pooja Mehta',
-        designation: 'HOD – Biology',
-        subject: 'Biology',
-        experience: '15 Years',
-        image:
-          'https://images.pexels.com/photos/846741/pexels-photo-846741.jpeg',
-      },
-    ]);
+    if (!faculty) {
+      return res.status(404).json({
+        success: false,
+        message: 'Faculty not found',
+      });
+    }
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Faculty seeded successfully',
       data: faculty,
     });
   } catch (error) {
-    console.error('Faculty Seed Error:', error.message);
+    console.error('Faculty Fetch Error:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Failed to seed faculty',
+      message: 'Failed to fetch faculty',
+    });
+  }
+};
+
+/**
+ * @desc    Create new faculty
+ * @route   POST /api/faculty
+ * @access  Admin
+ */
+export const createFaculty = async (req, res) => {
+  try {
+    const faculty = await Faculty.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: 'Faculty created successfully',
+      data: faculty,
+    });
+  } catch (error) {
+    console.error('Faculty Create Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create faculty',
+    });
+  }
+};
+
+/**
+ * @desc    Update faculty
+ * @route   PUT /api/faculty/:id
+ * @access  Admin
+ */
+export const updateFaculty = async (req, res) => {
+  try {
+    const faculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!faculty) {
+      return res.status(404).json({
+        success: false,
+        message: 'Faculty not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Faculty updated successfully',
+      data: faculty,
+    });
+  } catch (error) {
+    console.error('Faculty Update Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update faculty',
+    });
+  }
+};
+
+/**
+ * @desc    Delete faculty (Soft Delete)
+ * @route   DELETE /api/faculty/:id
+ * @access  Admin
+ */
+export const deleteFaculty = async (req, res) => {
+  try {
+    const faculty = await Faculty.findById(req.params.id);
+
+    if (!faculty) {
+      return res.status(404).json({
+        success: false,
+        message: 'Faculty not found',
+      });
+    }
+
+    faculty.isActive = false;
+    await faculty.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Faculty deleted successfully',
+    });
+  } catch (error) {
+    console.error('Faculty Delete Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete faculty',
     });
   }
 };
