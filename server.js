@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 
 /* ================= ROUTES ================= */
 import authRoutes from './routes/auth.routes.js';
@@ -12,10 +13,16 @@ import admissionRoutes from './routes/admission.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import facultyRoutes from './routes/faculty.routes.js';
 import libraryRoutes from './routes/library.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 
 /* ================= UTILS ================= */
 import { seedFirstAdmin } from './utils/seedAdmin.js';
+
+/* ================= CLOUDINARY INIT ================= */
+// ⚠️ Important: This ensures Cloudinary is configured
+// before any controller tries to upload/delete images
+import './config/cloudinary.js';
 
 dotenv.config();
 
@@ -32,7 +39,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ================= STATIC FILES ================= */
-// http://localhost:5000/assets/filename.jpg
+/*
+  NOTE:
+  This is intentionally kept for backward compatibility.
+  Even though Cloudinary is now used, this does NOT break anything.
+*/
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 /* ================= ROUTES ================= */
@@ -42,11 +53,38 @@ app.use('/api/admissions', admissionRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 
 /* ================= ROOT ================= */
 app.get('/', (req, res) => {
   res.send('🚀 API is running');
+});
+
+/* ================= MULTER ERROR HANDLER ================= */
+/*
+  This specifically handles Multer errors like:
+  - Field name missing
+  - Unexpected field
+  - File too large
+*/
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+  next(err);
+});
+
+/* ================= GLOBAL ERROR HANDLER ================= */
+app.use((err, req, res, next) => {
+  console.error('❌ Server Error:', err.message);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+  });
 });
 
 /* ================= 404 HANDLER ================= */

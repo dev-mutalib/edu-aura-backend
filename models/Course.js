@@ -28,10 +28,9 @@ const courseSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
     image: {
-      type: String, // Image URL (Cloudinary / local / CDN)
-      required: true,
+      url: String,
+      public_id: String,
     },
 
     price: {

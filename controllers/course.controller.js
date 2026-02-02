@@ -1,4 +1,5 @@
 import Course from '../models/Course.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * @desc    Get all active courses
@@ -64,18 +65,19 @@ export const getCourseById = async (req, res) => {
  */
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, duration, level, category, image, price } =
-      req.body;
-
-    const course = await Course.create({
-      title,
-      description,
-      duration,
-      level,
-      category,
-      image,
-      price,
+    const course = new Course({
+      title: req.body.title,
+      description: req.body.description,
+      image: req.file
+        ? {
+            url: req.file.path, // Cloudinary URL
+            public_id: req.file.filename,
+          }
+        : null,
+      isActive: true,
     });
+
+    await course.save();
 
     res.status(201).json({
       success: true,
@@ -107,9 +109,25 @@ export const updateCourse = async (req, res) => {
       });
     }
 
+    //  DELETE OLD IMAGE FROM CLOUDINARY (IF NEW IMAGE COMES)
+    if (req.file && course.image?.public_id) {
+      await cloudinary.uploader.destroy(course.image.public_id);
+    }
+
+    const updatedData = {
+      title: req.body.title || course.title,
+      description: req.body.description || course.description,
+      image: req.file
+        ? {
+            url: req.file.path,
+            public_id: req.file.filename,
+          }
+        : course.image,
+    };
+
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updatedData,
       { new: true, runValidators: true },
     );
 
@@ -128,7 +146,7 @@ export const updateCourse = async (req, res) => {
 };
 
 /**
- * @desc    Delete course (Soft Delete)
+ * @desc    Delete course (Soft Delete + Cloudinary Cleanup)
  * @route   DELETE /api/courses/:id
  * @access  Admin
  */
@@ -143,6 +161,12 @@ export const deleteCourse = async (req, res) => {
       });
     }
 
+    // DELETE IMAGE FROM CLOUDINARY
+    if (course.image?.public_id) {
+      await cloudinary.uploader.destroy(course.image.public_id);
+    }
+
+    // Soft delete
     course.isActive = false;
     await course.save();
 

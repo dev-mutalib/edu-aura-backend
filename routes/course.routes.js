@@ -1,4 +1,5 @@
 import express from 'express';
+import upload from '../middleware/upload.middleware.js';
 import {
   getAllCourses,
   getCourseById,
@@ -27,28 +28,13 @@ router.get('/:id', getCourseById);
  * =========================
  */
 
-// Create a new course
-router.post(
-  '/',
-  // protect,
-  // admin,
-  createCourse,
-);
+// Create a new course (Cloudinary upload)
+router.post('/', upload.single('image'), createCourse);
 
-// Update course
-router.put(
-  '/:id',
-  // protect,
-  // admin,
-  updateCourse,
-);
+// Update course (Cloudinary replace old image)
+router.put('/:id', upload.single('image'), updateCourse);
 
-// Delete course (Soft Delete)
-router.delete(
-  '/:id',
-  // protect,
-  // admin,
-  deleteCourse,
-);
+// Delete course (Soft Delete + Cloudinary delete)
+router.delete('/:id', deleteCourse);
 
 export default router;

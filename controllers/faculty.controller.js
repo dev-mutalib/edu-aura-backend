@@ -1,4 +1,5 @@
 import Faculty from '../models/faculty.model.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * @desc    Get all active faculty
@@ -64,7 +65,18 @@ export const getFacultyById = async (req, res) => {
  */
 export const createFaculty = async (req, res) => {
   try {
-    const faculty = await Faculty.create(req.body);
+    const faculty = new Faculty({
+      ...req.body,
+      image: req.file
+        ? {
+            url: req.file.path, // Cloudinary URL
+            public_id: req.file.filename,
+          }
+        : null,
+      isActive: true,
+    });
+
+    await faculty.save();
 
     res.status(201).json({
       success: true,
@@ -87,10 +99,7 @@ export const createFaculty = async (req, res) => {
  */
 export const updateFaculty = async (req, res) => {
   try {
-    const faculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const faculty = await Faculty.findById(req.params.id);
 
     if (!faculty) {
       return res.status(404).json({
@@ -99,10 +108,31 @@ export const updateFaculty = async (req, res) => {
       });
     }
 
+    // 🧨 Delete old image if new image uploaded
+    if (req.file && faculty.image?.public_id) {
+      await cloudinary.uploader.destroy(faculty.image.public_id);
+    }
+
+    const updatedData = {
+      ...req.body,
+      image: req.file
+        ? {
+            url: req.file.path,
+            public_id: req.file.filename,
+          }
+        : faculty.image,
+    };
+
+    const updatedFaculty = await Faculty.findByIdAndUpdate(
+      req.params.id,
+      updatedData,
+      { new: true, runValidators: true },
+    );
+
     res.status(200).json({
       success: true,
       message: 'Faculty updated successfully',
-      data: faculty,
+      data: updatedFaculty,
     });
   } catch (error) {
     console.error('Faculty Update Error:', error.message);
@@ -114,7 +144,7 @@ export const updateFaculty = async (req, res) => {
 };
 
 /**
- * @desc    Delete faculty (Soft Delete)
+ * @desc    Delete faculty (Soft Delete + Cloudinary Cleanup)
  * @route   DELETE /api/faculty/:id
  * @access  Admin
  */
@@ -127,6 +157,11 @@ export const deleteFaculty = async (req, res) => {
         success: false,
         message: 'Faculty not found',
       });
+    }
+
+    // 🧨 Delete image from Cloudinary
+    if (faculty.image?.public_id) {
+      await cloudinary.uploader.destroy(faculty.image.public_id);
     }
 
     faculty.isActive = false;
