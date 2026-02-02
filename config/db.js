@@ -1,15 +1,25 @@
-import mongoose from "mongoose";
-import dotenv from "dotenv";
+import mongoose from 'mongoose';
 
-dotenv.config();
+let isConnected = false;
 
 const connectDB = async () => {
+  if (isConnected) {
+    return;
+  }
+
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected");
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      dbName: 'edu_aura_db', // 🔥 FORCE DATABASE NAME
+    });
+
+    isConnected = true;
+
+    console.log('✅ MongoDB Connected Successfully');
+    console.log('👉 Database:', conn.connection.name);
+    console.log('👉 Host:', conn.connection.host);
   } catch (error) {
-    console.error("DB Connection Error:", error.message);
-    process.exit(1);
+    console.error('❌ MongoDB Connection Error:', error.message);
+    throw new Error('Database connection failed');
   }
 };
 
