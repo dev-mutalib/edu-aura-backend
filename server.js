@@ -14,6 +14,7 @@ import contactRoutes from './routes/contact.routes.js';
 import facultyRoutes from './routes/faculty.routes.js';
 import libraryRoutes from './routes/library.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import notesRoutes from './routes/notes.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 
 /* ================= UTILS ================= */
@@ -54,6 +55,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notes', notesRoutes);
 app.use('/api/ai', aiRoutes);
 
 /* ================= ROOT ================= */
