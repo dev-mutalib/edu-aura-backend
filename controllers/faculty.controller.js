@@ -1,15 +1,15 @@
 import Faculty from '../models/faculty.model.js';
-import cloudinary from '../config/cloudinary.js';
 
 /**
- * @desc    Get all active faculty
+ * @desc    Get all active faculty (FIFO order)
  * @route   GET /api/faculty
  * @access  Public
  */
 export const getAllFaculty = async (req, res) => {
   try {
     const faculty = await Faculty.find({ isActive: true }).sort({
-      createdAt: -1,
+      createdAt: 1,
+      _id: 1, // ✅ tie-breaker
     });
 
     res.status(200).json({
@@ -27,7 +27,7 @@ export const getAllFaculty = async (req, res) => {
 };
 
 /**
- * @desc    Get single faculty by ID
+ * @desc    Get faculty by ID
  * @route   GET /api/faculty/:id
  * @access  Public
  */
@@ -59,20 +59,20 @@ export const getFacultyById = async (req, res) => {
 };
 
 /**
- * @desc    Create new faculty
+ * @desc    Create faculty
  * @route   POST /api/faculty
  * @access  Admin
  */
 export const createFaculty = async (req, res) => {
   try {
+    const { name, designation, subject, experience, image } = req.body;
+
     const faculty = new Faculty({
-      ...req.body,
-      image: req.file
-        ? {
-            url: req.file.path, // Cloudinary URL
-            public_id: req.file.filename,
-          }
-        : null,
+      name,
+      designation,
+      subject,
+      experience,
+      image: image || null,
       isActive: true,
     });
 
@@ -84,7 +84,7 @@ export const createFaculty = async (req, res) => {
       data: faculty,
     });
   } catch (error) {
-    console.error('Faculty Create Error:', error.message);
+    console.error('Create Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to create faculty',
@@ -108,24 +108,9 @@ export const updateFaculty = async (req, res) => {
       });
     }
 
-    // 🧨 Delete old image if new image uploaded
-    if (req.file && faculty.image?.public_id) {
-      await cloudinary.uploader.destroy(faculty.image.public_id);
-    }
-
-    const updatedData = {
-      ...req.body,
-      image: req.file
-        ? {
-            url: req.file.path,
-            public_id: req.file.filename,
-          }
-        : faculty.image,
-    };
-
     const updatedFaculty = await Faculty.findByIdAndUpdate(
       req.params.id,
-      updatedData,
+      { ...req.body },
       { new: true, runValidators: true },
     );
 
@@ -135,7 +120,7 @@ export const updateFaculty = async (req, res) => {
       data: updatedFaculty,
     });
   } catch (error) {
-    console.error('Faculty Update Error:', error.message);
+    console.error('Update Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to update faculty',
@@ -144,7 +129,7 @@ export const updateFaculty = async (req, res) => {
 };
 
 /**
- * @desc    Delete faculty (Soft Delete + Cloudinary Cleanup)
+ * @desc    Delete faculty (Soft delete)
  * @route   DELETE /api/faculty/:id
  * @access  Admin
  */
@@ -159,11 +144,6 @@ export const deleteFaculty = async (req, res) => {
       });
     }
 
-    // 🧨 Delete image from Cloudinary
-    if (faculty.image?.public_id) {
-      await cloudinary.uploader.destroy(faculty.image.public_id);
-    }
-
     faculty.isActive = false;
     await faculty.save();
 
@@ -172,7 +152,7 @@ export const deleteFaculty = async (req, res) => {
       message: 'Faculty deleted successfully',
     });
   } catch (error) {
-    console.error('Faculty Delete Error:', error.message);
+    console.error('Delete Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to delete faculty',

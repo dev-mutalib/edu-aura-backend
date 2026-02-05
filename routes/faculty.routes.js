@@ -1,5 +1,4 @@
 import express from 'express';
-import upload from '../middleware/upload.middleware.js';
 import {
   getAllFaculty,
   getFacultyById,
@@ -8,22 +7,17 @@ import {
   deleteFaculty,
 } from '../controllers/faculty.controller.js';
 
-// Optional: JWT middleware
-// import { protect, admin } from '../middleware/auth.middleware.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-/**
- * Public Routes
- */
+/* ================= PUBLIC ROUTES ================= */
 router.get('/', getAllFaculty);
 router.get('/:id', getFacultyById);
 
-/**
- * Admin Routes
- */
-router.post('/', upload.single('image'), createFaculty);
-router.put('/:id', upload.single('image'), updateFaculty);
-router.delete('/:id', deleteFaculty);
+/* ================= ADMIN ROUTES ================= */
+router.post('/', authMiddleware(['admin']), createFaculty);
+router.put('/:id', authMiddleware(['admin']), updateFaculty);
+router.delete('/:id', authMiddleware(['admin']), deleteFaculty);
 
 export default router;

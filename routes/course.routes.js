@@ -1,5 +1,4 @@
 import express from 'express';
-import upload from '../middleware/upload.middleware.js';
 import {
   getAllCourses,
   getCourseById,
@@ -8,13 +7,13 @@ import {
   deleteCourse,
 } from '../controllers/course.controller.js';
 
+import { authMiddleware } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
 
-/**
- * =========================
- * Public Routes
- * =========================
- */
+/* =========================
+   PUBLIC ROUTES
+   ========================= */
 
 // Get all active courses
 router.get('/', getAllCourses);
@@ -22,19 +21,17 @@ router.get('/', getAllCourses);
 // Get single course by ID
 router.get('/:id', getCourseById);
 
-/**
- * =========================
- * Admin Routes
- * =========================
- */
+/* =========================
+   ADMIN ROUTES (PROTECTED)
+   ========================= */
 
-// Create a new course (Cloudinary upload)
-router.post('/', upload.single('image'), createCourse);
+// Create course → Admin only
+router.post('/', authMiddleware(['admin']), createCourse);
 
-// Update course (Cloudinary replace old image)
-router.put('/:id', upload.single('image'), updateCourse);
+// Update course → Admin only
+router.put('/:id', authMiddleware(['admin']), updateCourse);
 
-// Delete course (Soft Delete + Cloudinary delete)
-router.delete('/:id', deleteCourse);
+// Delete course (soft delete) → Admin only
+router.delete('/:id', authMiddleware(['admin']), deleteCourse);
 
 export default router;

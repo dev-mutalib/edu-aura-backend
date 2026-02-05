@@ -28,14 +28,17 @@ const courseSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    image: {
-      url: String,
-      public_id: String,
-    },
 
     price: {
       type: Number,
       required: true,
+    },
+
+    image: {
+      url: {
+        type: String,
+        default: null,
+      },
     },
 
     isActive: {
@@ -47,5 +50,4 @@ const courseSchema = new mongoose.Schema(
 );
 
 const Course = mongoose.model('Course', courseSchema);
-
 export default Course;

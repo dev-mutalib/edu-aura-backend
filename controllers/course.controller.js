@@ -1,15 +1,15 @@
 import Course from '../models/Course.js';
-import cloudinary from '../config/cloudinary.js';
 
 /**
- * @desc    Get all active courses
+ * @desc    Get all active courses (FIFO order)
  * @route   GET /api/courses
  * @access  Public
  */
 export const getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find({ isActive: true }).sort({
-      createdAt: -1,
+      createdAt: 1,
+      _id: 1, // ✅ tie-breaker (VERY IMPORTANT)
     });
 
     res.status(200).json({
@@ -59,7 +59,7 @@ export const getCourseById = async (req, res) => {
 };
 
 /**
- * @desc    Create a new course
+ * @desc    Create new course
  * @route   POST /api/courses
  * @access  Admin
  */
@@ -68,12 +68,11 @@ export const createCourse = async (req, res) => {
     const course = new Course({
       title: req.body.title,
       description: req.body.description,
-      image: req.file
-        ? {
-            url: req.file.path, // Cloudinary URL
-            public_id: req.file.filename,
-          }
-        : null,
+      duration: req.body.duration,
+      level: req.body.level,
+      category: req.body.category,
+      price: req.body.price,
+      image: req.body.image || null,
       isActive: true,
     });
 
@@ -109,25 +108,9 @@ export const updateCourse = async (req, res) => {
       });
     }
 
-    //  DELETE OLD IMAGE FROM CLOUDINARY (IF NEW IMAGE COMES)
-    if (req.file && course.image?.public_id) {
-      await cloudinary.uploader.destroy(course.image.public_id);
-    }
-
-    const updatedData = {
-      title: req.body.title || course.title,
-      description: req.body.description || course.description,
-      image: req.file
-        ? {
-            url: req.file.path,
-            public_id: req.file.filename,
-          }
-        : course.image,
-    };
-
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      updatedData,
+      { ...req.body },
       { new: true, runValidators: true },
     );
 
@@ -146,7 +129,7 @@ export const updateCourse = async (req, res) => {
 };
 
 /**
- * @desc    Delete course (Soft Delete + Cloudinary Cleanup)
+ * @desc    Delete course (Soft delete)
  * @route   DELETE /api/courses/:id
  * @access  Admin
  */
@@ -161,12 +144,6 @@ export const deleteCourse = async (req, res) => {
       });
     }
 
-    // DELETE IMAGE FROM CLOUDINARY
-    if (course.image?.public_id) {
-      await cloudinary.uploader.destroy(course.image.public_id);
-    }
-
-    // Soft delete
     course.isActive = false;
     await course.save();
 
