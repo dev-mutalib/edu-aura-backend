@@ -26,11 +26,7 @@ const facultySchema = new mongoose.Schema(
     image: {
       url: {
         type: String,
-        default: null,
-      },
-      filename: {
-        type: String,
-        default: null,
+        default: null, // ✅ full URL only
       },
     },
 

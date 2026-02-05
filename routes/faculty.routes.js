@@ -11,13 +11,27 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-/* ================= PUBLIC ROUTES ================= */
+/* =========================
+   PUBLIC ROUTES
+   ========================= */
+
+// Get all active faculty
 router.get('/', getAllFaculty);
+
+// Get faculty by ID
 router.get('/:id', getFacultyById);
 
-/* ================= ADMIN ROUTES ================= */
+/* =========================
+   ADMIN ROUTES (PROTECTED)
+   ========================= */
+
+// Create faculty → Admin only
 router.post('/', authMiddleware(['admin']), createFaculty);
+
+// Update faculty → Admin only
 router.put('/:id', authMiddleware(['admin']), updateFaculty);
+
+// Delete faculty → Admin only
 router.delete('/:id', authMiddleware(['admin']), deleteFaculty);
 
 export default router;

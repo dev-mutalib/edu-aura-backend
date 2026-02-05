@@ -1,7 +1,12 @@
 import Faculty from '../models/faculty.model.js';
 
+/* ================= HELPERS ================= */
+const isValidImageURL = (url) =>
+  typeof url === 'string' &&
+  (url.startsWith('http://') || url.startsWith('https://'));
+
 /**
- * @desc    Get all active faculty (FIFO order)
+ * @desc    Get all active faculty
  * @route   GET /api/faculty
  * @access  Public
  */
@@ -9,7 +14,7 @@ export const getAllFaculty = async (req, res) => {
   try {
     const faculty = await Faculty.find({ isActive: true }).sort({
       createdAt: 1,
-      _id: 1, // ✅ tie-breaker
+      _id: 1,
     });
 
     res.status(200).json({
@@ -18,7 +23,6 @@ export const getAllFaculty = async (req, res) => {
       data: faculty,
     });
   } catch (error) {
-    console.error('Faculty Fetch Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch faculty',
@@ -50,7 +54,6 @@ export const getFacultyById = async (req, res) => {
       data: faculty,
     });
   } catch (error) {
-    console.error('Faculty Fetch Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch faculty',
@@ -65,18 +68,20 @@ export const getFacultyById = async (req, res) => {
  */
 export const createFaculty = async (req, res) => {
   try {
-    const { name, designation, subject, experience, image } = req.body;
+    const { image } = req.body;
 
-    const faculty = new Faculty({
-      name,
-      designation,
-      subject,
-      experience,
-      image: image || null,
+    if (image?.url && !isValidImageURL(image.url)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image URL must be a full absolute URL',
+      });
+    }
+
+    const faculty = await Faculty.create({
+      ...req.body,
+      image: image?.url ? { url: image.url } : null,
       isActive: true,
     });
-
-    await faculty.save();
 
     res.status(201).json({
       success: true,
@@ -84,7 +89,6 @@ export const createFaculty = async (req, res) => {
       data: faculty,
     });
   } catch (error) {
-    console.error('Create Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to create faculty',
@@ -99,20 +103,30 @@ export const createFaculty = async (req, res) => {
  */
 export const updateFaculty = async (req, res) => {
   try {
-    const faculty = await Faculty.findById(req.params.id);
+    const { image } = req.body;
 
-    if (!faculty) {
-      return res.status(404).json({
+    if (image?.url && !isValidImageURL(image.url)) {
+      return res.status(400).json({
         success: false,
-        message: 'Faculty not found',
+        message: 'Image URL must be a full absolute URL',
       });
     }
 
     const updatedFaculty = await Faculty.findByIdAndUpdate(
       req.params.id,
-      { ...req.body },
+      {
+        ...req.body,
+        image: image?.url ? { url: image.url } : null,
+      },
       { new: true, runValidators: true },
     );
+
+    if (!updatedFaculty) {
+      return res.status(404).json({
+        success: false,
+        message: 'Faculty not found',
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -120,7 +134,6 @@ export const updateFaculty = async (req, res) => {
       data: updatedFaculty,
     });
   } catch (error) {
-    console.error('Update Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to update faculty',
@@ -129,13 +142,17 @@ export const updateFaculty = async (req, res) => {
 };
 
 /**
- * @desc    Delete faculty (Soft delete)
+ * @desc    Soft delete faculty
  * @route   DELETE /api/faculty/:id
  * @access  Admin
  */
 export const deleteFaculty = async (req, res) => {
   try {
-    const faculty = await Faculty.findById(req.params.id);
+    const faculty = await Faculty.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true },
+    );
 
     if (!faculty) {
       return res.status(404).json({
@@ -144,15 +161,11 @@ export const deleteFaculty = async (req, res) => {
       });
     }
 
-    faculty.isActive = false;
-    await faculty.save();
-
     res.status(200).json({
       success: true,
-      message: 'Faculty deleted successfully',
+      message: 'Faculty deleted',
     });
   } catch (error) {
-    console.error('Delete Faculty Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to delete faculty',
