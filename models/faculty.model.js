@@ -24,8 +24,10 @@ const facultySchema = new mongoose.Schema(
     },
 
     image: {
-      url: String,
-      public_id: String,
+      url: {
+        type: String,
+        default: null, // ✅ full URL only
+      },
     },
 
     isActive: {
@@ -37,5 +39,4 @@ const facultySchema = new mongoose.Schema(
 );
 
 const Faculty = mongoose.model('Faculty', facultySchema);
-
 export default Faculty;

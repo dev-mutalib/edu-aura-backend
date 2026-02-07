@@ -1,5 +1,9 @@
 import Course from '../models/Course.js';
-import cloudinary from '../config/cloudinary.js';
+
+/* ================= HELPERS ================= */
+const isValidImageURL = (url) =>
+  typeof url === 'string' &&
+  (url.startsWith('http://') || url.startsWith('https://'));
 
 /**
  * @desc    Get all active courses
@@ -9,7 +13,8 @@ import cloudinary from '../config/cloudinary.js';
 export const getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find({ isActive: true }).sort({
-      createdAt: -1,
+      createdAt: 1,
+      _id: 1,
     });
 
     res.status(200).json({
@@ -27,9 +32,7 @@ export const getAllCourses = async (req, res) => {
 };
 
 /**
- * @desc    Get single course by ID
- * @route   GET /api/courses/:id
- * @access  Public
+ * @desc    Get course by ID
  */
 export const getCourseById = async (req, res) => {
   try {
@@ -45,39 +48,31 @@ export const getCourseById = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      data: course,
-    });
+    res.status(200).json({ success: true, data: course });
   } catch (error) {
-    console.error('Get Course Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch course',
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch course' });
   }
 };
 
 /**
- * @desc    Create a new course
- * @route   POST /api/courses
- * @access  Admin
+ * @desc    Create course
  */
 export const createCourse = async (req, res) => {
   try {
-    const course = new Course({
-      title: req.body.title,
-      description: req.body.description,
-      image: req.file
-        ? {
-            url: req.file.path, // Cloudinary URL
-            public_id: req.file.filename,
-          }
-        : null,
+    const { image } = req.body;
+
+    if (image?.url && !isValidImageURL(image.url)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image URL must be a full absolute URL',
+      });
+    }
+
+    const course = await Course.create({
+      ...req.body,
+      image: image?.url ? { url: image.url } : null,
       isActive: true,
     });
-
-    await course.save();
 
     res.status(201).json({
       success: true,
@@ -95,39 +90,24 @@ export const createCourse = async (req, res) => {
 
 /**
  * @desc    Update course
- * @route   PUT /api/courses/:id
- * @access  Admin
  */
 export const updateCourse = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const { image } = req.body;
 
-    if (!course) {
-      return res.status(404).json({
+    if (image?.url && !isValidImageURL(image.url)) {
+      return res.status(400).json({
         success: false,
-        message: 'Course not found',
+        message: 'Image URL must be a full absolute URL',
       });
     }
 
-    //  DELETE OLD IMAGE FROM CLOUDINARY (IF NEW IMAGE COMES)
-    if (req.file && course.image?.public_id) {
-      await cloudinary.uploader.destroy(course.image.public_id);
-    }
-
-    const updatedData = {
-      title: req.body.title || course.title,
-      description: req.body.description || course.description,
-      image: req.file
-        ? {
-            url: req.file.path,
-            public_id: req.file.filename,
-          }
-        : course.image,
-    };
-
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      updatedData,
+      {
+        ...req.body,
+        image: image?.url ? { url: image.url } : null,
+      },
       { new: true, runValidators: true },
     );
 
@@ -137,7 +117,6 @@ export const updateCourse = async (req, res) => {
       data: updatedCourse,
     });
   } catch (error) {
-    console.error('Update Course Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to update course',
@@ -146,39 +125,15 @@ export const updateCourse = async (req, res) => {
 };
 
 /**
- * @desc    Delete course (Soft Delete + Cloudinary Cleanup)
- * @route   DELETE /api/courses/:id
- * @access  Admin
+ * @desc    Soft delete course
  */
 export const deleteCourse = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found',
-      });
-    }
-
-    // DELETE IMAGE FROM CLOUDINARY
-    if (course.image?.public_id) {
-      await cloudinary.uploader.destroy(course.image.public_id);
-    }
-
-    // Soft delete
-    course.isActive = false;
-    await course.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Course deleted successfully',
-    });
+    await Course.findByIdAndUpdate(req.params.id, { isActive: false });
+    res.status(200).json({ success: true, message: 'Course deleted' });
   } catch (error) {
-    console.error('Delete Course Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete course',
-    });
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to delete course' });
   }
 };
