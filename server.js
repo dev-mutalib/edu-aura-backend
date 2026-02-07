@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 
 /* ================= ROUTES ================= */
+import galleryRoutes from './routes/gallery.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import courseRoutes from './routes/course.routes.js';
 import admissionRoutes from './routes/admission.routes.js';
@@ -56,6 +57,7 @@ app.use('/api/admissions', admissionRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/api/gallery', galleryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/ai', aiRoutes);
