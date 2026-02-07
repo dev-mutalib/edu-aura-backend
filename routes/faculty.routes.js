@@ -1,4 +1,5 @@
 import express from 'express';
+import upload from '../middleware/upload.middleware.js';
 import {
   getAllFaculty,
   getFacultyById,
@@ -21,25 +22,8 @@ router.get('/:id', getFacultyById);
 /**
  * Admin Routes
  */
-router.post(
-  '/',
-  // protect,
-  // admin,
-  createFaculty,
-);
-
-router.put(
-  '/:id',
-  // protect,
-  // admin,
-  updateFaculty,
-);
-
-router.delete(
-  '/:id',
-  // protect,
-  // admin,
-  deleteFaculty,
-);
+router.post('/', upload.single('image'), createFaculty);
+router.put('/:id', upload.single('image'), updateFaculty);
+router.delete('/:id', deleteFaculty);
 
 export default router;

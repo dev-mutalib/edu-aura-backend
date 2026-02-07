@@ -24,8 +24,8 @@ const facultySchema = new mongoose.Schema(
     },
 
     image: {
-      type: String, // Image URL
-      required: true,
+      url: String,
+      public_id: String,
     },
 
     isActive: {

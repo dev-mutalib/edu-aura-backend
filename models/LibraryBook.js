@@ -18,9 +18,8 @@ const libraryBookSchema = new mongoose.Schema(
       min: 0,
     },
     image: {
-      type: String,
-      required: true,
-      // example: "/assets/books/clean-code.jpg"
+      url: String,
+      public_id: String,
     },
   },
   { timestamps: true },
