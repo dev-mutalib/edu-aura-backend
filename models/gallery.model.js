@@ -2,12 +2,6 @@ import mongoose from 'mongoose';
 
 const gallerySchema = new mongoose.Schema(
   {
-    image: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
     title: {
       type: String,
       required: true,
@@ -25,6 +19,13 @@ const gallerySchema = new mongoose.Schema(
       required: true,
       enum: ['campus', 'academics', 'events'],
       default: 'campus',
+    },
+
+    image: {
+      url: {
+        type: String,
+        default: null, // ✅ full URL only
+      },
     },
   },
   { timestamps: true },
