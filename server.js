@@ -67,6 +67,11 @@ app.get('/', (req, res) => {
   res.send('🚀 API is running');
 });
 
+/* ================== Health API ==================== */
+app.get('/health', (req, res) => {
+  res.send('Server is Healthy');
+});
+
 /* ================= MULTER ERROR HANDLER ================= */
 /*
   This specifically handles Multer errors like:
